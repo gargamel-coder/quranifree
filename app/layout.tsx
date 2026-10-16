@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import Nav from "../components/Nav";
+import ServiceWorkerRegistrar from "../components/ServiceWorkerRegistrar";
 
 export const metadata: Metadata = {
   title: "Quranifree — Al-Qur'an murottal. Gratis, tanpa akun.",
@@ -21,6 +22,7 @@ export default function RootLayout({
     <html lang="id" className="dark">
       <body className="bg-base text-white antialiased md:pl-56">
         <Nav />
+        <ServiceWorkerRegistrar />
         {children}
       </body>
     </html>
