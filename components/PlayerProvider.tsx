@@ -52,9 +52,11 @@ export function usePlayer(): PlayerContextValue {
 export function PlayerProvider({
   children,
   reciterFolder,
+  ayahCount = 0,
 }: {
   children: React.ReactNode;
   reciterFolder: string;
+  ayahCount?: number;
 }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [state, setState] = useState<PlayerState>(() =>
@@ -64,6 +66,8 @@ export function PlayerProvider({
   const [toast, setToast] = useState<string | null>(null);
   const folderRef = useRef(reciterFolder);
   folderRef.current = reciterFolder;
+  const ayahCountRef = useRef(ayahCount);
+  ayahCountRef.current = ayahCount;
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -193,7 +197,7 @@ export function PlayerProvider({
     return () => clearInterval(id);
   }, [state.sleepTimerMinutes, state.playing]);
 
-  // audio ended handler: repeat → replay; stop-at-end → handled by machine; else advance
+  // audio ended handler: repeat → replay; else advance to next ayah (or stop at end)
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -204,12 +208,36 @@ export function PlayerProvider({
           audio.play().catch(() => {});
           return s;
         }
-        return { ...s, _ended: true } as PlayerState & { _ended?: boolean };
+        if (s.sleepStopAtSurahEnd && s.ayah >= ayahCountRef.current) {
+          audio.pause();
+          return { ...s, playing: false };
+        }
+        const n = machineNext(s, ayahCountRef.current);
+        if (n.ayah !== s.ayah && n.playing) {
+          audio.src = ayahAudioUrl(folderRef.current, n.surah, n.ayah);
+          audio.playbackRate = n.speed;
+          audio.play().catch(() => {});
+          setLastRead(n.surah, n.ayah);
+        } else if (!n.playing) {
+          audio.pause();
+        }
+        return n;
       });
     };
     const onError = () => {
       showToast("Audio ayat ini tidak tersedia, lanjut ke ayat berikutnya");
-      setState((s) => ({ ...s, _skip: true } as PlayerState & { _skip?: boolean }));
+      setState((s) => {
+        const n = machineNext(s, ayahCountRef.current);
+        if (n.ayah !== s.ayah && n.playing) {
+          audio.src = ayahAudioUrl(folderRef.current, n.surah, n.ayah);
+          audio.playbackRate = n.speed;
+          audio.play().catch(() => {});
+          setLastRead(n.surah, n.ayah);
+        } else if (!n.playing) {
+          audio.pause();
+        }
+        return n;
+      });
     };
     audio.addEventListener("ended", onEnded);
     audio.addEventListener("error", onError);

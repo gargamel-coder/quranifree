@@ -108,7 +108,7 @@ export default function SurahPage({ params }: { params: { id: string } }) {
     return <main className="p-8 text-center text-neutral-400">Memuat…</main>;
   }
   return (
-    <PlayerProvider reciterFolder={folder}>
+    <PlayerProvider reciterFolder={folder} ayahCount={ayahCount}>
       <Reader surahId={surahId} />
       <PlayerBar ayahCount={ayahCount || 114} />
     </PlayerProvider>
