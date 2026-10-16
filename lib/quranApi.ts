@@ -123,3 +123,15 @@ export async function getReciters(): Promise<Reciter[]> {
       relativePath: RECITER_FOLDERS[r.id],
     }));
 }
+
+const DEFAULT_RECITER_ID = 7; // Mishary Rashid al-Afasy
+
+export async function resolveReciterFolder(reciterId: number | null): Promise<string> {
+  try {
+    const reciters = await getReciters();
+    const chosen = reciters.find((r) => r.id === reciterId) ?? reciters.find((r) => r.id === DEFAULT_RECITER_ID);
+    return chosen?.relativePath ?? RECITER_FOLDERS[DEFAULT_RECITER_ID];
+  } catch {
+    return RECITER_FOLDERS[DEFAULT_RECITER_ID];
+  }
+}
